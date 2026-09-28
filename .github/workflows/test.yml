@@ -1,0 +1,39 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # fleet declares 3.9 as its floor, so the floor is the one that matters.
+        # 3.13 is here to catch anything that only breaks on a new interpreter.
+        python-version: ["3.9", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run the test suite
+        run: uv run --python ${{ matrix.python-version }} pytest
+
+      - name: Verify the wheel ships its templates
+        # A wheel missing templates/ installs fine and then fails at
+        # `fleet install`, which is the worst way to find out.
+        run: |
+          uv build
+          uv run python - <<'PY'
+          import glob, zipfile
+          wheel = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(wheel).namelist()
+          templates = [n for n in names if "templates/" in n]
+          assert templates, f"no templates in {wheel}"
+          print(f"{len(templates)} templates in {wheel}")
+          PY
