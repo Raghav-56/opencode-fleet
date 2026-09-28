@@ -1,0 +1,28 @@
+name: OIDC diagnostic
+
+# Temporary. Decodes the OIDC token so we can see the exact claims PyPI matches
+# against its trusted publisher table. Delete once publishing works.
+on:
+  workflow_dispatch:
+
+jobs:
+  claims:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Show the claims
+        run: |
+          resp=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi")
+          echo "$resp" | python3 -c '
+          import sys, json, base64
+          token = json.load(sys.stdin)["value"]
+          segment = token.split(".")[1]
+          segment += "=" * (-len(segment) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(segment))
+          for key in ("aud", "sub", "repository", "repository_owner",
+                      "workflow_ref", "ref", "event_name", "actor"):
+              print(f"{key}: {claims.get(key)}")
+          '
