@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "opencode-fleet"
+version = "0.2.0"
+description = "Run and coordinate a fleet of OpenCode agents from the command line"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["opencode", "agents", "orchestration", "llm", "cli"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Build Tools",
+]
+# The runtime shells out to the opencode and herdr binaries and imports nothing
+# outside the standard library, so there is nothing to resolve at install time.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+fleet = "fleet.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/OWNER/opencode-fleet"
+Issues = "https://github.com/OWNER/opencode-fleet/issues"
+
+[tool.hatch.build.targets.wheel]
+# Everything under src/fleet ships, templates included, so `fleet install`
+# works from a plain wheel with no extra data path configuration.
+packages = ["src/fleet"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/fleet", "tests", "README.md", "LICENSE"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
