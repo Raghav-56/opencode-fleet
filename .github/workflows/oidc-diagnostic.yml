@@ -1,7 +1,7 @@
 name: OIDC diagnostic
 
-# Temporary. Decodes the OIDC token so we can see the exact claims PyPI matches
-# against its trusted publisher table. Delete once publishing works.
+# Temporary. Performs the OIDC exchange by hand and prints PyPI's own error,
+# which uv collapses into a generic 403. Delete once publishing works.
 on:
   workflow_dispatch:
 
@@ -12,7 +12,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Show the claims
+      - name: Show the claims PyPI matches on
         run: |
           resp=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi")
@@ -23,6 +23,29 @@ jobs:
           segment += "=" * (-len(segment) % 4)
           claims = json.loads(base64.urlsafe_b64decode(segment))
           for key in ("aud", "sub", "repository", "repository_owner",
-                      "workflow_ref", "ref", "event_name", "actor"):
-              print(f"{key}: {claims.get(key)}")
+                      "repository_owner_id", "job_workflow_ref", "workflow_ref",
+                      "event_name"):
+              print(f"  {key}: {claims.get(key)}")
+          '
+
+      - name: Exchange the token and print PyPI's verdict
+        run: |
+          resp=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=pypi")
+          token=$(echo "$resp" | python3 -c 'import sys,json;print(json.load(sys.stdin)["value"])')
+          echo "  mint-token response:"
+          curl -sS -X POST https://pypi.org/_/oidc/mint-token \
+            -d "{\"token\": \"${token}\"}" \
+            | python3 -c '
+          import sys, json
+          try:
+              body = json.load(sys.stdin)
+          except Exception:
+              print("   (non-JSON response)")
+              raise SystemExit
+          if "token" in body:
+              print("   SUCCESS: PyPI minted a short-lived token")
+          else:
+              print("   message:", body.get("message"))
+              print("   code:   ", body.get("code"))
           '
