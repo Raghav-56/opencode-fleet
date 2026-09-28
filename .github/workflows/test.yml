@@ -22,14 +22,16 @@ jobs:
           enable-cache: true
 
       - name: Run the test suite
-        run: uv run --python ${{ matrix.python-version }} pytest
+        # --extra dev, because a fresh venv has no pytest. The project itself
+        # has no runtime dependencies, so the suite is an explicit extra.
+        run: uv run --python ${{ matrix.python-version }} --extra dev pytest
 
       - name: Verify the wheel ships its templates
         # A wheel missing templates/ installs fine and then fails at
         # `fleet install`, which is the worst way to find out.
         run: |
           uv build
-          uv run python - <<'PY'
+          uv run --python ${{ matrix.python-version }} python - <<'PY'
           import glob, zipfile
           wheel = glob.glob("dist/*.whl")[0]
           names = zipfile.ZipFile(wheel).namelist()

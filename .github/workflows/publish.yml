@@ -28,7 +28,7 @@ jobs:
       # A release that ships a broken build is worse than a release that never
       # happens, so the suite gates the upload.
       - name: Run the test suite
-        run: uv run --python 3.12 pytest
+        run: uv run --python 3.12 --extra dev pytest
 
       - name: Build
         run: uv build
