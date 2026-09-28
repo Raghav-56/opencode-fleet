@@ -28,9 +28,8 @@ dev = ["pytest>=7"]
 [project.scripts]
 fleet = "fleet.cli:main"
 
-[project.urls]
-Homepage = "https://github.com/OWNER/opencode-fleet"
-Issues = "https://github.com/OWNER/opencode-fleet/issues"
+# No [project.urls] yet. A published package should not carry a placeholder link;
+# add Homepage and Issues once there is a real repository to point at.
 
 [tool.hatch.build.targets.wheel]
 # Everything under src/fleet ships, templates included, so `fleet install`
