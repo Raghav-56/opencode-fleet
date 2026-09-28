@@ -35,17 +35,18 @@ jobs:
           token=$(echo "$resp" | python3 -c 'import sys,json;print(json.load(sys.stdin)["value"])')
           echo "  mint-token response:"
           curl -sS -X POST https://pypi.org/_/oidc/mint-token \
+            -H "Content-Type: application/json" \
             -d "{\"token\": \"${token}\"}" \
-            | python3 -c '
+            | tee /tmp/mint.json | python3 -c '
           import sys, json
+          raw = sys.stdin.read()
           try:
-              body = json.load(sys.stdin)
+              body = json.loads(raw)
           except Exception:
-              print("   (non-JSON response)")
+              print("   raw:", raw[:500])
               raise SystemExit
           if "token" in body:
               print("   SUCCESS: PyPI minted a short-lived token")
           else:
-              print("   message:", body.get("message"))
-              print("   code:   ", body.get("code"))
+              print("   raw:", json.dumps(body)[:500])
           '
