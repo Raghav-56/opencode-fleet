@@ -64,7 +64,8 @@ jobs:
 
       - name: Publish
         run: uv publish
-        env:
-          # Left empty on purpose. Any stray value would make uv prefer a token
-          # over the OIDC exchange and fail the job.
-          UV_PUBLISH_TOKEN: ""
+        # No UV_PUBLISH_TOKEN here, not even an empty one. uv treats the variable
+        # as present whenever it is declared at all, and an empty value makes it
+        # skip the OIDC exchange and send an empty bearer token, which PyPI
+        # answers with a 403. Leaving it undeclared is what triggers trusted
+        # publishing.
